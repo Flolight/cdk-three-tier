@@ -7,7 +7,21 @@ export class CdkThreeTierStack extends cdk.Stack {
 
     // Defining a VPC for the application
     const vpc = new ec2.Vpc(this, 'AppVPC', {
-      cidr: '10.0.0.0/16'
+      cidr: '10.0.0.0/16',
+      subnetConfiguration: [
+        {
+          name: 'LoadBalancer',
+          subnetType: ec2.SubnetType.PUBLIC
+        },
+        {
+          name: 'App',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
+        },
+        {
+          name: 'Database',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+        }
+      ]
 
     });
 
