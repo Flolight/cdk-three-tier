@@ -11,7 +11,8 @@ export class CdkThreeTierStack extends cdk.Stack {
   public readonly rdsCluster: rds.DatabaseCluster;
 
   private readonly dbPort: number = 3306;
-  private readonly appPort: number = 80;
+  private readonly httpPort: number = 80;
+  private readonly httpsPort: number = 443;
 
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -54,9 +55,14 @@ export class CdkThreeTierStack extends cdk.Stack {
     });
 
     this.vpc.publicSubnets.forEach((subnet) => {
-      this.ec2SecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(this.appPort), `${subnet.ipv4CidrBlock}:${this.appPort}`);
-      this.ec2SecurityGroup.addEgressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.allTcp(), `from ${subnet.ipv4CidrBlock}:ALL PORTS`)
+      // http in
+      this.ec2SecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(this.httpPort), `${subnet.ipv4CidrBlock}:${this.httpPort}`);
+      
+      // DB out
+      this.ec2SecurityGroup.addEgressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(this.dbPort), `from ${subnet.ipv4CidrBlock}:${this.dbPort}`)
     })
+    // https out
+    this.ec2SecurityGroup.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(this.httpsPort), `from 0.0.0.0/0:${this.httpsPort}`)
 
     this.rdsCluster = new rds.DatabaseCluster(this, 'MyRDSCluster', {
       defaultDatabaseName: 'MyRDSDb',
