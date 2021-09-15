@@ -43,3 +43,9 @@ test('VPC has a security group for Database', () => {
     VpcId: {"Ref": "AppVPCB7733741"}
   }));
 });
+
+test('VPC has an RDS instance', () => {
+
+  expectCDK(myStack).to(haveResource('AWS::RDS::DBCluster'));
+
+});
