@@ -1,13 +1,20 @@
 import * as cdk from '@aws-cdk/core';
 import * as ec2 from '@aws-cdk/aws-ec2';
 
+const cidr = '10.0.0.0/16';
 export class CdkThreeTierStack extends cdk.Stack {
+
+  public readonly vpc: ec2.Vpc;
+  
+  private readonly dbPort: number = 3306;
+
+
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // Defining a VPC for the application
-    const vpc = new ec2.Vpc(this, 'AppVPC', {
-      cidr: '10.0.0.0/16',
+    this.vpc = new ec2.Vpc(this, 'AppVPC', {
+      cidr: cidr,
       subnetConfiguration: [
         {
           name: 'LoadBalancer',
@@ -26,11 +33,12 @@ export class CdkThreeTierStack extends cdk.Stack {
     });
 
     const rdsSecurityGroup = new ec2.SecurityGroup(this, 'RDSSecurityGroup', {
-      vpc: vpc,
+      vpc: this.vpc,
       allowAllOutbound: false
     });
-    vpc.privateSubnets.forEach((subnet) => {
-      rdsSecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(3306), `${subnet.ipv4CidrBlock}:3306`)
+
+    this.vpc.privateSubnets.forEach((subnet) => {
+      rdsSecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(this.dbPort), `${subnet.ipv4CidrBlock}:${this.dbPort}`)
       rdsSecurityGroup.addEgressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.allTcp(), `from ${subnet.ipv4CidrBlock}:ALL PORTS`)
 
     });

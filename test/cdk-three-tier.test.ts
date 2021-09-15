@@ -4,6 +4,9 @@ import * as CdkThreeTier from '../lib/cdk-three-tier-stack';
 
 const stack = new cdk.Stack();
 const myStack = new CdkThreeTier.CdkThreeTierStack(stack, 'MyTestStack');
+const privateCIDR1 = "10.0.64.0/19";
+const privateCIDR2 = "10.0.96.0/19";
+const dbPort = 3306;
 
 test('Not Empty Stack', () => {
     // THEN
@@ -30,12 +33,12 @@ test('VPC has the right number of resources' ,() => {
 test('VPC has a security group for Database', () => {
   expectCDK(myStack).to(haveResourceLike('AWS::EC2::SecurityGroup',{
     SecurityGroupEgress: [
-      {"CidrIp":"10.0.64.0/19","Description":"from 10.0.64.0/19:ALL PORTS","FromPort":0,"IpProtocol":"tcp","ToPort":65535},
-      {"CidrIp":"10.0.96.0/19","Description":"from 10.0.96.0/19:ALL PORTS","FromPort":0,"IpProtocol":"tcp","ToPort":65535}
+      {"CidrIp":`${privateCIDR1}`,"Description":`from ${privateCIDR1}:ALL PORTS`,"FromPort":0,"IpProtocol":"tcp","ToPort":65535},
+      {"CidrIp":`${privateCIDR2}`,"Description":`from ${privateCIDR2}:ALL PORTS`,"FromPort":0,"IpProtocol":"tcp","ToPort":65535}
   ],
     SecurityGroupIngress: [
-      { "CidrIp": "10.0.64.0/19", "Description": "10.0.64.0/19:3306", "FromPort": 3306, "IpProtocol": "tcp", "ToPort": 3306 },
-      { "CidrIp": "10.0.96.0/19", "Description": "10.0.96.0/19:3306", "FromPort": 3306, "IpProtocol": "tcp", "ToPort": 3306 },
+      { "CidrIp": privateCIDR1, "Description": `${privateCIDR1}:${dbPort}`, "FromPort": dbPort, "IpProtocol": "tcp", "ToPort": dbPort },
+      { "CidrIp": privateCIDR2, "Description": `${privateCIDR2}:${dbPort}`, "FromPort": dbPort, "IpProtocol": "tcp", "ToPort": dbPort },
     ],
     VpcId: {"Ref": "AppVPCB7733741"}
   }));
