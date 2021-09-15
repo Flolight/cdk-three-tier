@@ -6,7 +6,9 @@ const cidr = '10.0.0.0/16';
 export class CdkThreeTierStack extends cdk.Stack {
 
   public readonly vpc: ec2.Vpc;
-  
+  public readonly rdsSecurityGroup: ec2.SecurityGroup;
+  public readonly rdsCluster: rds.DatabaseCluster;
+
   private readonly dbPort: number = 3306;
 
 
@@ -33,18 +35,18 @@ export class CdkThreeTierStack extends cdk.Stack {
 
     });
 
-    const rdsSecurityGroup = new ec2.SecurityGroup(this, 'RDSSecurityGroup', {
+    this.rdsSecurityGroup = new ec2.SecurityGroup(this, 'RDSSecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: false
     });
 
     this.vpc.privateSubnets.forEach((subnet) => {
-      rdsSecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(this.dbPort), `${subnet.ipv4CidrBlock}:${this.dbPort}`)
-      rdsSecurityGroup.addEgressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.allTcp(), `from ${subnet.ipv4CidrBlock}:ALL PORTS`)
+      this.rdsSecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(this.dbPort), `${subnet.ipv4CidrBlock}:${this.dbPort}`)
+      this.rdsSecurityGroup.addEgressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.allTcp(), `from ${subnet.ipv4CidrBlock}:ALL PORTS`)
 
     });
 
-    const rdsCluster = new rds.DatabaseCluster(this, 'MyRDSCluster', {
+    this.rdsCluster = new rds.DatabaseCluster(this, 'MyRDSCluster', {
       defaultDatabaseName: 'MyRDSDb',
       engine: rds.DatabaseClusterEngine.AURORA,
       instanceProps: {
@@ -54,7 +56,7 @@ export class CdkThreeTierStack extends cdk.Stack {
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED
         },
         securityGroups: [
-          rdsSecurityGroup
+          this.rdsSecurityGroup
         ]
       },
 
