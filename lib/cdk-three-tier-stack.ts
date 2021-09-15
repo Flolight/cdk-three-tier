@@ -25,5 +25,15 @@ export class CdkThreeTierStack extends cdk.Stack {
 
     });
 
+    const rdsSecurityGroup = new ec2.SecurityGroup(this, 'RDSSecurityGroup', {
+      vpc: vpc,
+      allowAllOutbound: false
+    });
+    vpc.privateSubnets.forEach((subnet) => {
+      rdsSecurityGroup.addIngressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.tcp(3306), `${subnet.ipv4CidrBlock}:3306`)
+      rdsSecurityGroup.addEgressRule(ec2.Peer.ipv4(subnet.ipv4CidrBlock), ec2.Port.allTcp(), `from ${subnet.ipv4CidrBlock}:ALL PORTS`)
+
+    });
+
   }
 }
