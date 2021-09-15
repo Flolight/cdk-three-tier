@@ -4,9 +4,13 @@ import * as CdkThreeTier from '../lib/cdk-three-tier-stack';
 
 const stack = new cdk.Stack();
 const myStack = new CdkThreeTier.CdkThreeTierStack(stack, 'MyTestStack');
-const privateCIDR1 = "10.0.64.0/19";
-const privateCIDR2 = "10.0.96.0/19";
+const privateDB_CIDR1 = "10.0.64.0/19";
+const privateDB_CIDR2 = "10.0.96.0/19";
+const publicEC2_CIDR1 = "10.0.0.0/19";
+const publicEC2_CIDR2 = "10.0.32.0/19";
 const dbPort = 3306;
+const httpPort = 80;
+const httpsPort = 443;
 
 test('Not Empty Stack', () => {
     // THEN
@@ -33,12 +37,31 @@ test('VPC has the right number of resources' ,() => {
 test('VPC has a security group for Database', () => {
   expectCDK(myStack).to(haveResourceLike('AWS::EC2::SecurityGroup',{
     SecurityGroupEgress: [
-      {"CidrIp":`${privateCIDR1}`,"Description":`from ${privateCIDR1}:ALL PORTS`,"FromPort":0,"IpProtocol":"tcp","ToPort":65535},
-      {"CidrIp":`${privateCIDR2}`,"Description":`from ${privateCIDR2}:ALL PORTS`,"FromPort":0,"IpProtocol":"tcp","ToPort":65535}
+      {"CidrIp":`${privateDB_CIDR1}`,"Description":`from ${privateDB_CIDR1}:ALL PORTS`,"FromPort":0,"IpProtocol":"tcp","ToPort":65535},
+      {"CidrIp":`${privateDB_CIDR2}`,"Description":`from ${privateDB_CIDR2}:ALL PORTS`,"FromPort":0,"IpProtocol":"tcp","ToPort":65535}
   ],
     SecurityGroupIngress: [
-      { "CidrIp": privateCIDR1, "Description": `${privateCIDR1}:${dbPort}`, "FromPort": dbPort, "IpProtocol": "tcp", "ToPort": dbPort },
-      { "CidrIp": privateCIDR2, "Description": `${privateCIDR2}:${dbPort}`, "FromPort": dbPort, "IpProtocol": "tcp", "ToPort": dbPort },
+      { "CidrIp": privateDB_CIDR1, "Description": `${privateDB_CIDR1}:${dbPort}`, "FromPort": dbPort, "IpProtocol": "tcp", "ToPort": dbPort },
+      { "CidrIp": privateDB_CIDR2, "Description": `${privateDB_CIDR2}:${dbPort}`, "FromPort": dbPort, "IpProtocol": "tcp", "ToPort": dbPort },
+    ],
+    VpcId: {"Ref": "AppVPCB7733741"}
+  }));
+});
+
+test('VPC has a security group for EC2', () => {
+  expectCDK(myStack).to(haveResourceLike('AWS::EC2::SecurityGroup',{
+    SecurityGroupEgress: [
+      // For EC2 to contact DB
+      {"CidrIp":`${publicEC2_CIDR1}`,"Description":`from ${publicEC2_CIDR1}:${dbPort}`, "FromPort":dbPort,"IpProtocol":"tcp","ToPort":dbPort},
+      {"CidrIp":`${publicEC2_CIDR2}`,"Description":`from ${publicEC2_CIDR2}:${dbPort}`,"FromPort":dbPort,"IpProtocol":"tcp","ToPort":dbPort},
+      
+      // For EC2 to contact the internet
+      {"CidrIp":`0.0.0.0/0`,"Description":`from 0.0.0.0/0:${httpsPort}`,"FromPort":httpsPort,"IpProtocol":"tcp","ToPort":httpsPort}
+  ],
+    SecurityGroupIngress: [
+      // For LoadB to contact EC2
+      { "CidrIp": publicEC2_CIDR1, "Description": `${publicEC2_CIDR1}:${httpPort}`, "FromPort": httpPort, "IpProtocol": "tcp", "ToPort": httpPort },
+      { "CidrIp": publicEC2_CIDR2, "Description": `${publicEC2_CIDR2}:${httpPort}`, "FromPort": httpPort, "IpProtocol": "tcp", "ToPort": httpPort },
     ],
     VpcId: {"Ref": "AppVPCB7733741"}
   }));
@@ -49,3 +72,4 @@ test('VPC has an RDS instance', () => {
   expectCDK(myStack).to(haveResource('AWS::RDS::DBCluster'));
 
 });
+
