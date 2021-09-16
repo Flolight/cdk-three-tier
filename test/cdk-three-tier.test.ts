@@ -67,6 +67,27 @@ test('VPC has a security group for EC2', () => {
   }));
 });
 
+test('VPC has a security group for ALB', () => {
+  expectCDK(myStack).to(haveResourceLike('AWS::EC2::SecurityGroup',{
+    SecurityGroupEgress: [
+      // For ALB to conntact EC2
+      {"CidrIp":`${privateDB_CIDR1}`, "Description": `${privateDB_CIDR1}:${httpPort}`, "FromPort":httpPort,"IpProtocol":"tcp","ToPort":httpPort},
+      {"CidrIp":`${privateDB_CIDR2}`, "Description": `${privateDB_CIDR2}:${httpPort}`, "FromPort":httpPort,"IpProtocol":"tcp","ToPort":httpPort},
+      
+      // For ALB to contact the internet
+      {"CidrIp":`0.0.0.0/0`,"Description":`to 0.0.0.0/0:${httpsPort}`, "FromPort":httpsPort,"IpProtocol":"tcp","ToPort":httpsPort}
+  ],
+    SecurityGroupIngress: [
+      // For internet to contact ALB with http
+      { "CidrIp": `0.0.0.0/0`, "Description":`from 0.0.0.0/0:${httpPort}`, "FromPort": httpPort, "IpProtocol": "tcp", "ToPort": httpPort },
+
+      // For internet to contact ALB with https
+      { "CidrIp": `0.0.0.0/0`, "Description":`from 0.0.0.0/0:${httpsPort}`, "FromPort": httpsPort, "IpProtocol": "tcp", "ToPort": httpsPort },
+    ],
+    VpcId: {"Ref": "AppVPCB7733741"}
+  }));
+});
+
 test('VPC has an RDS instance', () => {
 
   expectCDK(myStack).to(haveResource('AWS::RDS::DBCluster'));
