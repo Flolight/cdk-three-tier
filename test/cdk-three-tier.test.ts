@@ -94,3 +94,11 @@ test('VPC has an RDS instance', () => {
 
 });
 
+test('ALB configuration is valid', () =>{
+  expectCDK(myStack).to(haveResourceLike('AWS::ElasticLoadBalancingV2::LoadBalancer', {
+    Scheme: "internet-facing",
+    SecurityGroups: [{ "Fn::GetAtt": ["ALBSecurityGroup29A3BDEF", "GroupId"]}],
+    Subnets: [{ "Ref": "AppVPCLoadBalancerSubnet1SubnetF4005469"}, { "Ref": "AppVPCLoadBalancerSubnet2Subnet1A6C83EE"}]
+  }));
+});
+

@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as rds from '@aws-cdk/aws-rds';
+import * as elb from '@aws-cdk/aws-elasticloadbalancingv2';
 
 const cidr = '10.0.0.0/16';
 export class CdkThreeTierStack extends cdk.Stack {
@@ -10,11 +11,12 @@ export class CdkThreeTierStack extends cdk.Stack {
   public readonly ec2SecurityGroup: ec2.SecurityGroup;
   public readonly albSecurityGroup: ec2.SecurityGroup;
   public readonly rdsCluster: rds.DatabaseCluster;
+  public readonly loadBalancer: elb.CfnLoadBalancer;
 
   private readonly dbPort: number = 3306;
   private readonly httpPort: number = 80;
   private readonly httpsPort: number = 443;
-
+  private readonly defaultLoadBalancerScheme = 'internet-facing'
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -100,6 +102,12 @@ export class CdkThreeTierStack extends cdk.Stack {
         ]
       },
 
+    });
+
+    new elb.CfnLoadBalancer(this, 'LoadBalancer', {
+      scheme: this.defaultLoadBalancerScheme,
+      subnets: this.vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC}).subnetIds,
+      securityGroups: [this.albSecurityGroup.securityGroupId]
     });
 
   }
